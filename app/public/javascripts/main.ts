@@ -8,4 +8,5 @@ import module2 from "./module2";
 $().ready(() => {
     alert(_.repeat(module1(), 3));
     alert(_.repeat(module2(), 2));
+    console.log('hgoe');
 });

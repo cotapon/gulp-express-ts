@@ -85,6 +85,16 @@ gulp.task('ts', function () {
         .pipe(browserSync.reload({stream: true}));
 });
 
+gulp.task('karma', function () {
+  return gulp.src([
+    'app/public/javascripts/test/**/*.ts'
+  ])
+    .pipe($.karma({
+      configFile: 'karma.conf.js',
+      action: 'watch'
+    }));
+});
+
 
 gulp.task('server', function () {
   return gulp.src([
