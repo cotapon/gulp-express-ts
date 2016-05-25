@@ -1,5 +1,6 @@
 var gulp = require('gulp');
 var $ = require('gulp-load-plugins')();
+var changed = require('gulp-changed');
 var nodemon = require('gulp-nodemon');
 var browserSync = require('browser-sync').create();
 var browserify = require('browserify');
@@ -10,36 +11,33 @@ var sourcemaps = require('gulp-sourcemaps');
 var uglify = require('gulp-uglify');
 var babel = require('gulp-babel');
 var rimraf = require('rimraf');
-var runSequence = require('run-sequence'); // エラーでも止めない
+var runSequence = require('run-sequence');
 
 gulp.task('browser-sync', function() {
   browserSync.init({
-    files: ['app/public/**/*.*', 'app/views/**/*.*'], // BrowserSyncにまかせるファイル群
-    proxy: 'http://localhost:3000',  // express の動作するポートにプロキシ
-    port: 4000,  // BrowserSync は 4000 番ポートで起動
-    open: true  // ブラウザ open しない
+    files: ['app/public/**/*.*', 'app/views/**/*.*'],
+    proxy: 'http://localhost:3000',
+    port: 8000,
+    open: true
   });
 });
 
 gulp.task('serve', ['browser-sync'], function () {
   nodemon({
     script: './dist/bin/www',
-    ext: 'js html css',
-    ignore: [  // nodemon で監視しないディレクトリ
+    ext: 'js css',
+    ignore: [
       'gulpfile.js',
       'node_modules',
-      'bin',
-      'test'
+      'bin'
     ],
     env: {
       'NODE_ENV': 'development'
     },
-    stdout: false  // Express の再起動時のログを監視するため
+    stdout: false
   }).on('readable', function() {
   this.stdout.on('data', function(chunk) {
   if (/^Express\ server\ listening/.test(chunk)) {
-        // Express の再起動が完了したら、reload() でBrowserSync に通知。
-        // ※Express で出力する起動時のメッセージに合わせて比較文字列は修正
         reload();
       }
       process.stdout.write(chunk);
@@ -52,19 +50,23 @@ gulp.task('serve', ['browser-sync'], function () {
 
 gulp.task('jade', function() {
   return gulp.src('./app/views/*.jade')
+    .pipe(changed('./dist'))
     .pipe($.plumber())
-    .pipe(gulp.dest('./dist/views/'));
+    .pipe(gulp.dest('./dist/views/'))
+    .pipe(browserSync.reload({stream: true}));
 });
 
 gulp.task('stylus', function() {
   return gulp.src('./app/public/**/*.styl')
+    .pipe(changed('./dist'))
     .pipe($.plumber())
     .pipe($.stylus())
-    .pipe(gulp.dest('./dist/public/'));
+    .pipe(gulp.dest('./dist/public/'))
+    .pipe(browserSync.reload({stream: true}));
 });
 
 gulp.task('copy', function () {
-  gulp.src('./app/bin/**')
+  return gulp.src('./app/bin/**')
     .pipe($.plumber())
     .pipe(gulp.dest('./dist/bin'));
 });
@@ -95,8 +97,7 @@ gulp.task('karma', function () {
     }));
 });
 
-
-gulp.task('server', function () {
+gulp.task('express-ts', function () {
   return gulp.src([
     './app/**/*.ts',
     '!./app/public/**/*.ts'
@@ -105,16 +106,17 @@ gulp.task('server', function () {
     .pipe($.typescript(
       { target: 'ES6', module: 'commonjs' }
     ))
-    .pipe(gulp.dest('./dist/'));
+    .pipe(gulp.dest('./dist/'))
+    .pipe(browserSync.reload({stream: true}));
+});
+
+gulp.task('watch', function () {
+  gulp.watch('./app/views/**/*.jade', ['jade']);
+  gulp.watch('./app/public/**/*.ts', ['ts']);
+  gulp.watch('./app/public/**/*.stly', ['stylus']);
+  gulp.watch(['./app/**/*.ts', '!./app/public/**/*.ts'], ['express-ts']);
 });
 
 gulp.task('default', function(cb) {
-  return runSequence(
-    ['jade', 'stylus', 'ts', 'server'], 'serve', cb
-  );
-});
-
-
-gulp.task('watch', function () {
-    gulp.watch('app/ts/**/*.ts', ['build-ts']);
+  return runSequence(['jade', 'stylus', 'ts', 'express-ts'], 'watch', 'serve', 'karma', cb);
 });
