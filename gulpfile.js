@@ -118,5 +118,5 @@ gulp.task('watch', function () {
 });
 
 gulp.task('default', function(cb) {
-  return runSequence(['jade', 'stylus', 'ts', 'express-ts'], 'watch', 'serve', 'karma', cb);
+  return runSequence(['jade', 'stylus', 'ts', 'express-ts', 'copy'], 'watch', 'serve', 'karma', cb);
 });
