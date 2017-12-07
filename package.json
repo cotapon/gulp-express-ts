@@ -45,6 +45,7 @@
     "licensify": "^3.1.1",
     "lodash": "^4.13.1",
     "mocha": "^2.5.2",
+    "rimraf": "^2.6.2",
     "run-sequence": "^1.2.1",
     "tsify": "^0.16.0",
     "typescript": "^1.6.2",
